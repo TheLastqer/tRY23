@@ -1,0 +1,205 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- GUI
+local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+screenGui.Name = "AutoSystem"
+screenGui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0, 260, 0, 430)
+frame.Position = UDim2.new(0, 10, 0.5, -215)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 2
+frame.BorderColor3 = Color3.fromRGB(0, 136, 255)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+-- Titre principal (nom du jeu)
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 25)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = MarketplaceService:GetProductInfo(game.PlaceId).Name
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextStrokeTransparency = 0.75
+title.TextYAlignment = Enum.TextYAlignment.Top
+
+-- Sous-titre ("script made by FxZ Hub")
+local subtitle = Instance.new("TextLabel", frame)
+subtitle.Size = UDim2.new(1, 0, 0, 15)
+subtitle.Position = UDim2.new(0, 0, 0, 25)
+subtitle.BackgroundTransparency = 1
+subtitle.Text = "script made by FxZ Hub"
+subtitle.TextColor3 = Color3.fromRGB(150, 150, 150)
+subtitle.Font = Enum.Font.Gotham
+subtitle.TextSize = 12
+subtitle.TextStrokeTransparency = 0.85
+subtitle.TextYAlignment = Enum.TextYAlignment.Top
+
+-- Speed
+local speedLabel = Instance.new("TextLabel", frame)
+speedLabel.Position = UDim2.new(0, 10, 0, 50)
+speedLabel.Size = UDim2.new(1, -20, 0, 20)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Speed: 16"
+speedLabel.Font = Enum.Font.Gotham
+speedLabel.TextColor3 = Color3.new(1, 1, 1)
+speedLabel.TextSize = 14
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local speedBox = Instance.new("TextBox", frame)
+speedBox.Position = UDim2.new(0, 10, 0, 75)
+speedBox.Size = UDim2.new(1, -20, 0, 25)
+speedBox.Text = "16"
+speedBox.Font = Enum.Font.GothamBold
+speedBox.TextSize = 14
+speedBox.TextColor3 = Color3.new(1, 1, 1)
+speedBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+speedBox.BorderSizePixel = 0
+Instance.new("UICorner", speedBox).CornerRadius = UDim.new(0, 6)
+
+local targetSpeed = 16
+speedBox.FocusLost:Connect(function()
+	local num = tonumber(speedBox.Text)
+	if num then
+		targetSpeed = math.clamp(num, 0, 100)
+		speedLabel.Text = "Speed: " .. math.floor(targetSpeed)
+	else
+		speedBox.Text = tostring(targetSpeed)
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+	if humanoid and humanoid.Parent then
+		humanoid.WalkSpeed = targetSpeed
+	end
+end)
+
+-- Jump
+local jumpEnabled = false
+local jumpBtn = Instance.new("TextButton", frame)
+jumpBtn.Position = UDim2.new(0, 10, 0, 110)
+jumpBtn.Size = UDim2.new(1, -20, 0, 25)
+jumpBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+jumpBtn.TextColor3 = Color3.new(1, 1, 1)
+jumpBtn.Font = Enum.Font.GothamBold
+jumpBtn.TextSize = 14
+jumpBtn.Text = "Infinite Jump: OFF"
+Instance.new("UICorner", jumpBtn).CornerRadius = UDim.new(0, 6)
+
+jumpBtn.MouseButton1Click:Connect(function()
+	jumpEnabled = not jumpEnabled
+	jumpBtn.Text = "Infinite Jump: " .. (jumpEnabled and "ON" or "OFF")
+end)
+
+UIS.JumpRequest:Connect(function()
+	if jumpEnabled then
+		local hum = player.Character and player.Character:FindFirstChild("Humanoid")
+		if hum then
+			hum:ChangeState(Enum.HumanoidStateType.Jumping)
+		end
+	end
+end)
+
+-- Auto Sell
+local autoSell = false
+local sellBtn = Instance.new("TextButton", frame)
+sellBtn.Position = UDim2.new(0, 10, 0, 145)
+sellBtn.Size = UDim2.new(1, -20, 0, 30)
+sellBtn.BackgroundColor3 = Color3.fromRGB(0, 136, 255)
+sellBtn.TextColor3 = Color3.new(1, 1, 1)
+sellBtn.Font = Enum.Font.GothamBold
+sellBtn.TextSize = 16
+sellBtn.Text = "Auto Sell: OFF"
+Instance.new("UICorner", sellBtn).CornerRadius = UDim.new(0, 6)
+
+sellBtn.MouseButton1Click:Connect(function()
+	autoSell = not autoSell
+	sellBtn.Text = "Auto Sell: " .. (autoSell and "ON" or "OFF")
+end)
+
+task.spawn(function()
+	local merchant = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Merchant")
+	while true do
+		if autoSell then
+			pcall(function()
+				merchant:InvokeServer("SellAll")
+			end)
+		end
+		task.wait()
+	end
+end)
+
+-- Scrolling Frame for Baits
+local scroll = Instance.new("ScrollingFrame", frame)
+scroll.Position = UDim2.new(0, 10, 0, 185)
+scroll.Size = UDim2.new(1, -20, 1, -195)
+scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.ScrollBarThickness = 6
+scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
+scroll.ScrollingDirection = Enum.ScrollingDirection.Y
+
+local layout = Instance.new("UIListLayout", scroll)
+layout.Padding = UDim.new(0, 4)
+
+-- Bait buttons
+local baitList = {
+	"Flakes", "Anchovies", "Chum", "CoralStack", "Herring", "GlidingCrate",
+	"CrabCage", "LargeBone", "GlacialChunk", "CoilCage", "ToolBait",
+	"BulbBait", "Blubber", "SharkBait", "PlanktonGal"
+}
+
+local baitPrices = {
+	25, 125, 500, 1000, 2250, 4000, 7500, 9000, 13000, 22000, 40000, 70000, 100000, 250000, 500000
+}
+
+local baitToggles = {}
+
+for i, baitName in ipairs(baitList) do
+	local btn = Instance.new("TextButton", scroll)
+	btn.Size = UDim2.new(1, 0, 0, 25)
+	btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 14
+	btn.Text = baitName .. " ($" .. baitPrices[i] .. "): OFF"
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+	baitToggles[baitName] = false
+	btn.MouseButton1Click:Connect(function()
+		baitToggles[baitName] = not baitToggles[baitName]
+		btn.Text = baitName .. " ($" .. baitPrices[i] .. "): " .. (baitToggles[baitName] and "ON" or "OFF")
+	end)
+
+	task.spawn(function()
+		while true do
+			if baitToggles[baitName] then
+				pcall(function()
+					local args = {ReplicatedStorage.Baits:WaitForChild(baitName)}
+					ReplicatedStorage.Events.BuyBait:InvokeServer(unpack(args))
+				end)
+			end
+			task.wait()
+		end
+	end)
+end
+
+-- Toggle GUI Ctrl droit
+UIS.InputBegan:Connect(function(input, gpe)
+	if input.KeyCode == Enum.KeyCode.RightControl and not gpe then
+		frame.Visible = not frame.Visible
+	end
+end)
